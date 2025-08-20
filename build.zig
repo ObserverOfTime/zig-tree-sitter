@@ -4,28 +4,18 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const core = b.dependency("tree-sitter", .{
+    const core = b.dependency("tree_sitter", .{
         .target = target,
         .optimize = optimize,
     });
-
-    const lib = b.addStaticLibrary(.{
-        .name = "zig-tree-sitter",
-        .root_source_file = b.path("src/root.zig"),
-        .target = target,
-        .optimize = optimize,
-        .link_libc = true,
-    });
-    lib.linkLibrary(core.artifact("tree-sitter"));
-
-    b.installArtifact(lib);
+    const core_lib = core.artifact("tree-sitter");
 
     const module = b.addModule("tree_sitter", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
     });
-    module.linkLibrary(lib);
+    module.linkLibrary(core_lib);
 
     const docs = b.addObject(.{
         .name = "tree_sitter",
@@ -48,7 +38,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
-    tests.linkLibrary(lib);
+    tests.linkLibrary(core_lib);
 
     const run_tests = b.addRunArtifact(tests);
 
@@ -60,18 +50,8 @@ pub fn build(b: *std.Build) !void {
     defer args.deinit();
     while (args.next()) |a| {
         if (std.mem.eql(u8, a, "test")) {
-            if (b.lazyDependency("tree-sitter-c", .{})) |dep| {
-                const dep_lib = dep.builder.addStaticLibrary(.{
-                    .name = "tree-sitter-c",
-                    .target = target,
-                    .optimize = optimize,
-                    .link_libc = true,
-                });
-                dep_lib.addIncludePath(dep.path("src"));
-                dep_lib.addCSourceFile(.{
-                    .file = dep.path("src/parser.c"),
-                });
-                tests.linkLibrary(dep_lib);
+            if (b.lazyDependency("tree_sitter_c", .{})) |dep| {
+                tests.linkLibrary(dep.artifact("tree-sitter-c"));
             }
             break;
         }
