@@ -50,9 +50,11 @@ pub fn build(b: *std.Build) !void {
     defer args.deinit();
     while (args.next()) |a| {
         if (std.mem.eql(u8, a, "test")) {
-            if (b.lazyDependency("tree_sitter_c", .{})) |dep| {
-                tests.linkLibrary(dep.artifact("tree-sitter-c"));
-            }
+            const dep = b.lazyDependency("tree_sitter_c", .{
+                .target = target,
+                .optimize = optimize,
+            }).?;
+            tests.linkLibrary(dep.artifact("tree-sitter-c"));
             break;
         }
     }
