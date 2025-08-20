@@ -6,8 +6,8 @@ test "Language" {
     const language = ts.Language.load("c");
     defer language.destroy();
 
-    try testing.expectEqual(14, language.abi_version());
-    try testing.expectEqual(null, language.semantic_version());
+    try testing.expectEqual(15, language.abi_version());
+    try testing.expect(language.semantic_version() != null);
     try testing.expect(language.symbolCount() > 1);
     try testing.expect(language.fieldCount() > 1);
     try testing.expect(language.stateCount() > 1);
