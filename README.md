@@ -1,7 +1,7 @@
 # Zig Tree-sitter
 
-[![CI][ci]](https://github.com/tree-sitter/zig-tree-sitter/actions/workflows/ci.yml)
-[![docs][docs]](https://tree-sitter.github.io/zig-tree-sitter/)
+[![CI][ci]](https://github.com/ObserverOfTime/zig-tree-sitter/actions/workflows/ci.yml)
+[![docs][docs]](https://observeroftime.github.io/zig-tree-sitter/)
 
 Zig bindings to the [tree-sitter] parsing library.
 
@@ -79,11 +79,12 @@ pub fn main() !void {
 
     const cursor = ts.QueryCursor.create();
     defer cursor.destroy();
-    cursor.exec(query, node);
+    cursor.exec(query, node, null);
 
     // Get the captured node of the first match
     const match = cursor.nextMatch().?;
     const capture = match.captures[0].node;
+    std.debug.print("Captured: {}\n", .{capture});
     std.debug.assert(std.mem.eql(u8, capture.type(), "identifier"));
 }
 ```
@@ -91,5 +92,5 @@ pub fn main() !void {
 </details>
 
 [tree-sitter]: https://tree-sitter.github.io/tree-sitter/
-[ci]: https://img.shields.io/github/actions/workflow/status/tree-sitter/zig-tree-sitter/ci.yml?logo=github&label=CI
-[docs]: https://img.shields.io/github/deployments/tree-sitter/zig-tree-sitter/github-pages?logo=zig&label=API%20Docs
+[ci]: https://img.shields.io/github/actions/workflow/status/ObserverOfTime/zig-tree-sitter/ci.yml?logo=github&label=CI
+[docs]: https://img.shields.io/github/deployments/ObserverOfTime/zig-tree-sitter/github-pages?logo=zig&label=API%20Docs
