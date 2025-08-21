@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const alloc = @import("alloc.zig");
 const InputEdit = @import("types.zig").InputEdit;
 const Language = @import("language.zig").Language;
 const Node = @import("node.zig").Node;
@@ -67,7 +68,7 @@ pub const Tree = opaque {
 
     /// Free the ranges allocated with `getIncludedRanges()` or `getChangedRanges()`.
     pub fn freeRanges(ranges: []const Range) void {
-        std.c.free(@ptrCast(@constCast(ranges)));
+        alloc.free_fn(@ptrCast(@constCast(ranges)));
     }
 
     /// Edit the syntax tree to keep it in sync with source code that has been edited.
