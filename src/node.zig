@@ -1,3 +1,4 @@
+const builtin = @import("builtin");
 const std = @import("std");
 
 const InputEdit = @import("types.zig").InputEdit;
@@ -5,6 +6,7 @@ const Point = @import("types.zig").Point;
 const Range = @import("types.zig").Range;
 const Language = @import("language.zig").Language;
 const Tree = @import("tree.zig").Tree;
+const TreeCursor = @import("tree_cursor.zig").TreeCursor;
 
 /// A single node within a syntax tree.
 pub const Node = extern struct {
@@ -174,13 +176,66 @@ pub const Node = extern struct {
     }
 
     /// Get the node's child at the given index.
+    ///
+    /// To iterate over a long list of children, use `children()` instead.
     pub inline fn child(self: Node, child_index: u32) ?Node {
         return ts_node_child(self, child_index).orNull();
     }
 
     /// Get the node's *named* child at the given index.
+    ///
+    /// To iterate over a long list of children, use `namedChildren()` instead.
     pub inline fn namedChild(self: Node, child_index: u32) ?Node {
         return ts_node_named_child(self, child_index).orNull();
+    }
+
+    /// Return a list of this node's children.
+    ///
+    /// The caller is responsible for releasing the
+    /// allocated memory through `std.ArrayList.deinit()`.
+    pub fn children(self: Node, allocator: std.mem.Allocator) !std.ArrayList(Node) {
+        var result = try std.ArrayList(Node).initCapacity(allocator, self.childCount());
+        errdefer result.deinit();
+
+        var cursor = TreeCursor.create(self);
+        defer cursor.destroy();
+
+        if (!cursor.gotoFirstChild()) {
+            return result;
+        }
+
+        try result.append(cursor.currentNode());
+        while (cursor.gotoNextSibling()) {
+            result.appendAssumeCapacity(cursor.currentNode());
+        }
+
+        return result;
+    }
+
+    /// Return a list of this node's *named* children.
+    ///
+    /// The caller is responsible for releasing the
+    /// allocated memory through `std.ArrayList.deinit()`.
+    pub fn namedChildren(self: Node, allocator: std.mem.Allocator) !std.ArrayList(Node) {
+        var result = try std.ArrayList(Node).initCapacity(allocator, self.namedChildCount());
+        errdefer result.deinit();
+
+        var cursor = TreeCursor.create(self);
+        defer cursor.destroy();
+
+        if (!cursor.gotoFirstChild()) {
+            return result;
+        }
+
+        while (true) {
+            var node = cursor.currentNode();
+            if (node.isNamed()) {
+                result.appendAssumeCapacity(node);
+            }
+            if (!cursor.gotoNextSibling()) break;
+        }
+
+        return result;
     }
 
     /// Get the node's first child that contains or starts after the given byte offset.
@@ -194,13 +249,55 @@ pub const Node = extern struct {
     }
 
     /// Get the node's child with the given numerical field id.
+    ///
+    /// To iterate over a long list of children, use `childrenByFieldId()` instead.
     pub inline fn childByFieldId(self: Node, field_id: u16) ?Node {
         return ts_node_child_by_field_id(self, field_id).orNull();
     }
 
     /// Get the node's child with the given field name.
+    ///
+    /// To iterate over a long list of children, use `childrenByFieldName()` instead.
     pub inline fn childByFieldName(self: Node, name: []const u8) ?Node {
         return ts_node_child_by_field_name(self, name.ptr, @intCast(name.len)).orNull();
+    }
+
+    /// Return a list of this node's children with the given field ID.
+    ///
+    /// The caller is responsible for releasing the
+    /// allocated memory through `std.ArrayList.deinit()`.
+    pub fn childrenByFieldId(self: Node, allocator: std.mem.Allocator, field_id: u16) !std.ArrayList(Node) {
+        var result: std.ArrayList(Node) =
+            if (comptime builtin.zig_version.minor >= 15) .empty else .init(allocator);
+        errdefer result.deinit();
+
+        var cursor = TreeCursor.create(self);
+        defer cursor.destroy();
+
+        if (field_id == 0 or !cursor.gotoFirstChild()) {
+            return result;
+        }
+
+        while (true) {
+            if (cursor.currentFieldId() == field_id) {
+                try if (comptime builtin.zig_version.minor >= 15)
+                    result.append(allocator, cursor.currentNode())
+                else
+                    result.append(cursor.currentNode());
+            }
+            if (!cursor.gotoNextSibling()) break;
+        }
+
+        return result;
+    }
+
+    /// Return a list of this node's children with the given field name.
+    ///
+    /// The caller is responsible for releasing the
+    /// allocated memory through `std.ArrayList.deinit()`.
+    pub fn childrenByFieldName(self: Node, allocator: std.mem.Allocator, field_name: []const u8) !std.ArrayList(Node) {
+        const field_id = self.language().fieldIdForName(field_name);
+        return self.childrenByFieldId(allocator, field_id);
     }
 
     /// Get the node that contains `descendant`.
