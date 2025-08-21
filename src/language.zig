@@ -87,7 +87,7 @@ pub const Language = opaque {
     }
 
     /// Get the numerical id for the given field name string.
-    pub inline fn fieldIdForName(self: *const Language, field_name: []const u8) u32 {
+    pub inline fn fieldIdForName(self: *const Language, field_name: []const u8) u16 {
         return ts_language_field_id_for_name(self, field_name.ptr, @intCast(field_name.len));
     }
 
