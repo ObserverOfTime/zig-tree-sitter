@@ -1,6 +1,7 @@
 const builtin = @import("builtin");
 const std = @import("std");
 
+const alloc = @import("alloc.zig");
 const InputEdit = @import("types.zig").InputEdit;
 const Point = @import("types.zig").Point;
 const Range = @import("types.zig").Range;
@@ -354,7 +355,7 @@ pub const Node = extern struct {
 
     /// Free an S-expression allocated with `toSexp()`.
     pub fn freeSexp(sexp: []const u8) void {
-        std.c.free(@ptrCast(@constCast(sexp)));
+        alloc.free_fn(@ptrCast(@constCast(sexp)));
     }
 
     /// Format the node as a string.

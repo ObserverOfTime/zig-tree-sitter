@@ -172,6 +172,9 @@ test "TreeCursor" {
 }
 
 test "Node" {
+    ts.setAllocator(testing.allocator);
+    defer ts.setAllocator(null);
+
     const language = ts.Language.load("c");
     defer language.destroy();
 

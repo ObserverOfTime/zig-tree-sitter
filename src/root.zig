@@ -9,8 +9,6 @@ pub const LANGUAGE_VERSION = 15;
 /// The earliest ABI version that is supported by the current version of the library.
 pub const MIN_COMPATIBLE_LANGUAGE_VERSION = 13;
 
-pub const set_allocator = @import("alloc.zig").ts_set_allocator;
-
 const structs = @import("types.zig");
 pub const Input = structs.Input;
 pub const InputEdit = structs.InputEdit;
@@ -28,3 +26,5 @@ pub const Query = @import("query.zig").Query;
 pub const QueryCursor = @import("query_cursor.zig").QueryCursor;
 pub const Tree = @import("tree.zig").Tree;
 pub const TreeCursor = @import("tree_cursor.zig").TreeCursor;
+
+pub const setAllocator = @import("alloc.zig").setAllocator;
