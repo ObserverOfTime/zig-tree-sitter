@@ -2,15 +2,17 @@
     .name = .tree_sitter,
     .version = "0.25.1",
     .fingerprint = 0x841224b4264a3d65,
-    .minimum_zig_version = "0.14.0",
+    .minimum_zig_version = "0.14.1",
     .dependencies = .{
         .tree_sitter = .{
-            .url = "https://github.com/tree-sitter/tree-sitter/archive/refs/heads/release-0.25.tar.gz",
-            .hash = "tree_sitter-0.25.8-Tw2sRxW7CwCiJosGHB0dIWv0tROYNsI6hSEzNmsfOrhR",
+            // tree-sitter/tree-sitter#4743
+            .url = "https://github.com/tree-sitter/tree-sitter/archive/ef93906.tar.gz",
+            .hash = "tree_sitter-0.25.8-Tw2sR8q-CwBpDiIhhNPHvHyqWjnWrbaDAf9PRcvEyGkh",
         },
         .tree_sitter_c = .{
-            .url = "https://github.com/tree-sitter/tree-sitter-c/archive/976d785.tar.gz",
-            .hash = "tree_sitter_c-0.24.0-VJuGjG5iQADj4pKFZy8LQF8Pcisq3KN9rbKo8amF6uoJ",
+            // tree-sitter/tree-sitter-c#275
+            .url = "https://github.com/tree-sitter/tree-sitter-c/archive/3450141.tar.gz",
+            .hash = "tree_sitter_c-0.24.0-VJuGjP9iQAAhFIo6ihR4_n7OB3dn5BSU6_smy9xLwoL8",
             .lazy = true,
         },
     },
