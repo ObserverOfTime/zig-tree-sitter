@@ -40,11 +40,14 @@ pub const Tree = opaque {
 
     /// Get the included ranges of the syntax tree.
     ///
-    /// The caller is responsible for freeing them using `freeRanges`.
-    pub fn getIncludedRanges(self: *const Tree) []const Range {
+    /// The caller owns the memory.
+    pub fn getIncludedRanges(self: *const Tree, allocator: std.mem.Allocator) ![]Range {
         var length: u32 = 0;
         const ranges = ts_tree_included_ranges(self, &length);
-        return if (length > 0) ranges[0..length] else &.{};
+        defer alloc.free_fn(@ptrCast(@constCast(ranges)));
+        const result = try allocator.alloc(Range, length);
+        if (length > 0) @memcpy(result, ranges[0..length]);
+        return result;
     }
 
     /// Compare an old edited syntax tree to a new syntax
@@ -59,16 +62,14 @@ pub const Tree = opaque {
     /// between the old and new trees. Characters outside these
     /// ranges have identical ancestor nodes in both trees.
     ///
-    /// The caller is responsible for freeing them using `freeRanges()`.
-    pub fn getChangedRanges(self: *const Tree, new_tree: *const Tree) []const Range {
+    /// The caller owns the memory.
+    pub fn getChangedRanges(self: *const Tree, allocator: std.mem.Allocator, new_tree: *const Tree) ![]Range {
         var length: u32 = 0;
         const ranges = ts_tree_get_changed_ranges(self, new_tree, &length);
-        return if (length > 0) ranges[0..length] else &.{};
-    }
-
-    /// Free the ranges allocated with `getIncludedRanges()` or `getChangedRanges()`.
-    pub fn freeRanges(ranges: []const Range) void {
-        alloc.free_fn(@ptrCast(@constCast(ranges)));
+        defer alloc.free_fn(@ptrCast(@constCast(ranges)));
+        const result = try allocator.alloc(Range, length);
+        if (length > 0) @memcpy(result, ranges[0..length]);
+        return result;
     }
 
     /// Edit the syntax tree to keep it in sync with source code that has been edited.
