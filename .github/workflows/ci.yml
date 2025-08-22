@@ -40,6 +40,7 @@ jobs:
         include:
           - os: ubuntu-24.04
             target: x86_64-linux-gnu
+            flags: -Denable-wasm=true
           - os: ubuntu-24.04
             target: x86_64-linux-musl
           - os: ubuntu-24.04-arm
@@ -48,10 +49,12 @@ jobs:
             target: x86_64-windows-gnu
           - os: windows-2022
             target: x86_64-windows-msvc
+            flags: -Denable-wasm=true
           - os: windows-11-arm
             target: aarch64-windows-gnu
           - os: macos-15
             target: aarch64-macos-none
+            flags: -Denable-wasm=true
           - os: macos-13
             target: x86_64-macos-none
     steps:
@@ -66,4 +69,4 @@ jobs:
         if: matrix.target == 'x86_64-linux-musl'
         run: sudo apt-get update && sudo apt-get install -y musl
       - name: Run unit tests
-        run: zig build test -Dtarget=${{matrix.target}} --verbose
+        run: zig build test -Dtarget=${{matrix.target}} ${{matrix.flags}} --verbose
