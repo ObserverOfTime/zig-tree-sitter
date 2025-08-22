@@ -27,4 +27,8 @@ pub const QueryCursor = @import("query_cursor.zig").QueryCursor;
 pub const Tree = @import("tree.zig").Tree;
 pub const TreeCursor = @import("tree_cursor.zig").TreeCursor;
 
+const wasm = @import("wasm.zig");
+pub const WasmEngine = wasm.WasmEngine;
+pub const WasmStore = wasm.WasmStore;
+
 pub const setAllocator = @import("alloc.zig").setAllocator;

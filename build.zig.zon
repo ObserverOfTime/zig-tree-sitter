@@ -5,8 +5,8 @@
     .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .tree_sitter = .{
-            .url = "https://github.com/tree-sitter/tree-sitter/archive/refs/heads/release-0.25.tar.gz",
-            .hash = "tree_sitter-0.25.8-Tw2sR9G6CwCGeEE-eJIO4ZF6OGxjoOGabM10htV-Tu4N",
+            .url = "git+https://github.com/ObserverOfTime/tree-sitter?ref=zig14#85b7d4200f78da7c00f15fc2ad3330b7120cf2d2",
+            .hash = "tree_sitter-0.25.8-Tw2sRx67CwDGTJc9TieZBKCHPrySv1yJvmNbZRA8vOYz",
         },
         .tree_sitter_c = .{
             .url = "https://github.com/tree-sitter/tree-sitter-c/archive/976d785.tar.gz",

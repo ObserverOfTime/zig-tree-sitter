@@ -1,3 +1,4 @@
+const build = @import("build");
 const std = @import("std");
 
 const Input = @import("types.zig").Input;
@@ -10,6 +11,7 @@ const Node = @import("node.zig").Node;
 const Point = @import("types.zig").Point;
 const Range = @import("types.zig").Range;
 const Tree = @import("tree.zig").Tree;
+const WasmStore = @import("wasm.zig").WasmStore;
 
 /// A stateful object that is used to produce
 /// a syntax tree based on some source code.
@@ -31,11 +33,10 @@ pub const Parser = opaque {
 
     /// Set the language that the parser should use for parsing.
     ///
-    /// Returns an error if the language has an incompatible version.
-    pub fn setLanguage(self: *Parser, language: ?*const Language) error{IncompatibleVersion}!void {
-        if (!ts_parser_set_language(self, language)) {
-            return error.IncompatibleVersion;
-        }
+    /// Returns an error if the language has an incompatible version,
+    /// or if it was loaded from Wasm and the parser lacks a Wasm store.
+    pub fn setLanguage(self: *Parser, language: ?*const Language) error{IncompatibleLanguage}!void {
+        if (!ts_parser_set_language(self, language)) return error.IncompatibleLanguage;
     }
 
     /// Get the parser's current logger.
@@ -185,6 +186,20 @@ pub const Parser = opaque {
         ts_parser_reset(self);
     }
 
+    /// Assign the given Wasm store to the parser.
+    ///
+    /// A parser must have a Wasm store in order to use Wasm languages.
+    pub fn setWasmStore(self: *Parser, store: *WasmStore) void {
+        if (comptime !build.enable_wasm) @compileError("Wasm is not supported");
+        ts_parser_set_wasm_store(self, store);
+    }
+
+    /// Remove the parser's current Wasm store, if any, and return it.
+    pub fn takeWasmStore(self: *Parser) ?*WasmStore {
+        if (comptime !build.enable_wasm) @compileError("Wasm is not supported");
+        return ts_parser_take_wasm_store(self);
+    }
+
     /// Set the file to which the parser should write debugging graphs
     /// during parsing. The graphs are formatted in the DOT language.
     ///
@@ -244,3 +259,5 @@ extern fn ts_parser_cancellation_flag(self: *const Parser) ?*const usize;
 extern fn ts_parser_set_logger(self: *Parser, logger: Logger) void;
 extern fn ts_parser_logger(self: *const Parser) Logger;
 extern fn ts_parser_print_dot_graphs(self: *Parser, fd: c_int) void;
+extern fn ts_parser_set_wasm_store(parser: *Parser, store: *WasmStore) void;
+extern fn ts_parser_take_wasm_store(parser: *Parser) ?*WasmStore;

@@ -1,3 +1,4 @@
+const build = @import("build");
 const std = @import("std");
 const testing = std.testing;
 const ts = @import("root.zig");
@@ -19,6 +20,7 @@ test "Language" {
     try testing.expect(language.isVisible(1));
     try testing.expect(!language.isSupertype(1));
     try testing.expect(language.nextState(1, 161) > 1);
+    try testing.expect(!language.isWasm());
 
     const copy = language.dupe();
     try testing.expectEqual(language, copy);
@@ -362,4 +364,41 @@ test "QueryCursor" {
     try testing.expectEqual(1, match.captures.len);
     try testing.expectEqual(1, match.captures[0].index);
     try testing.expectEqualStrings("(", match.captures[0].node.type());
+}
+
+test "Wasm" {
+    if (comptime !build.enable_wasm) return error.SkipZigTest;
+
+    const engine = try ts.WasmEngine.init(null);
+    defer engine.deinit();
+
+    var error_message: []u8 = undefined;
+    const store = try ts.WasmStore.create(testing.allocator, engine, &error_message);
+    errdefer testing.allocator.free(error_message);
+    defer store.destroy();
+
+    const wasm = @embedFile("tree-sitter-c.wasm");
+    const language = try store.loadLanguage(testing.allocator, "c", wasm, &error_message);
+    errdefer testing.allocator.free(error_message);
+    defer language.destroy();
+
+    try testing.expect(language.isWasm());
+    try testing.expectEqual(1, store.languageCount());
+
+    const parser = ts.Parser.create();
+    defer parser.destroy();
+
+    try testing.expectError(error.IncompatibleLanguage, parser.setLanguage(language));
+    parser.setWasmStore(store);
+    defer _ = parser.takeWasmStore();
+    try parser.setLanguage(language);
+
+    const tree = try parser.parseBuffer("int main() {}", null, .UTF_8);
+    defer tree.destroy();
+
+    try testing.expectEqualStrings("translation_unit", tree.rootNode().type());
+
+    try testing.expectError(error.ParseError, store.loadLanguage(testing.allocator, "c", "", &error_message));
+    try testing.expectEqualStrings("failed to parse dylink section of wasm module", error_message);
+    testing.allocator.free(error_message);
 }
