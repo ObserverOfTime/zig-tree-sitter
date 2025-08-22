@@ -85,7 +85,7 @@ test "Tree" {
     try testing.expectEqual(13, tree.rootNode().endByte());
     try testing.expectEqual(3, tree.rootNodeWithOffset(3, .{ .row = 0, .column = 3 }).startByte());
 
-    var ranges = tree.getIncludedRanges();
+    var ranges = try tree.getIncludedRanges(testing.allocator);
     var range: ts.Range = .{
         .start_point = .{ .row = 0, .column = 0 },
         .end_point = .{ .row = 0xFFFFFFFF, .column = 0xFFFFFFFF },
@@ -93,7 +93,7 @@ test "Tree" {
         .end_byte = 0xFFFFFFFF,
     };
     try testing.expectEqualSlices(ts.Range, &.{range}, ranges);
-    ts.Tree.freeRanges(ranges);
+    testing.allocator.free(ranges);
 
     const old_tree = tree.dupe();
     try testing.expect(tree != old_tree);
@@ -115,9 +115,9 @@ test "Tree" {
         .start_byte = 0,
         .end_byte = 9,
     };
-    ranges = old_tree.getChangedRanges(new_tree);
+    ranges = try old_tree.getChangedRanges(testing.allocator, new_tree);
     try testing.expectEqualSlices(ts.Range, &.{range}, ranges);
-    ts.Tree.freeRanges(ranges);
+    testing.allocator.free(ranges);
 }
 
 test "TreeCursor" {
@@ -254,8 +254,8 @@ test "Node" {
     try testing.expectEqual(1, children_by_field_name.items.len);
     try testing.expectEqualDeep(children_by_field_name.items[0], children.items[2]);
 
-    const sexp = node.toSexp();
-    defer ts.Node.freeSexp(sexp);
+    const sexp = try node.toSexp(testing.allocator);
+    defer testing.allocator.free(sexp);
     try testing.expectStringStartsWith(sexp, "(function_definition type:");
 
     const new_tree = tree.dupe();
