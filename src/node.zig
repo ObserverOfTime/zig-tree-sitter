@@ -190,42 +190,40 @@ pub const Node = extern struct {
         return ts_node_named_child(self, child_index).orNull();
     }
 
-    /// Return a list of this node's children.
+    /// Get this node's children.
     ///
-    /// The caller is responsible for releasing the
-    /// allocated memory through `std.ArrayList.deinit()`.
-    pub fn children(self: Node, allocator: std.mem.Allocator) !std.ArrayList(Node) {
-        var result = try std.ArrayList(Node).initCapacity(allocator, self.childCount());
-        errdefer result.deinit();
+    /// The caller owns the memory.
+    pub fn children(self: Node, allocator: std.mem.Allocator) ![]Node {
+        var result: std.ArrayListUnmanaged(Node) = try .initCapacity(allocator, self.childCount());
+        errdefer result.deinit(allocator);
 
         var cursor = TreeCursor.create(self);
         defer cursor.destroy();
 
         if (!cursor.gotoFirstChild()) {
-            return result;
+            return try result.toOwnedSlice(allocator);
         }
 
-        try result.append(cursor.currentNode());
+        try result.append(allocator, cursor.currentNode());
         while (cursor.gotoNextSibling()) {
             result.appendAssumeCapacity(cursor.currentNode());
         }
 
-        return result;
+        return result.toOwnedSlice(allocator);
     }
 
-    /// Return a list of this node's *named* children.
+    /// Get this node's *named* children.
     ///
-    /// The caller is responsible for releasing the
-    /// allocated memory through `std.ArrayList.deinit()`.
-    pub fn namedChildren(self: Node, allocator: std.mem.Allocator) !std.ArrayList(Node) {
-        var result = try std.ArrayList(Node).initCapacity(allocator, self.namedChildCount());
-        errdefer result.deinit();
+    /// The caller owns the memory.
+    pub fn namedChildren(self: Node, allocator: std.mem.Allocator) ![]Node {
+        var result: std.ArrayListUnmanaged(Node) = try .initCapacity(allocator, self.namedChildCount());
+        errdefer result.deinit(allocator);
 
         var cursor = TreeCursor.create(self);
         defer cursor.destroy();
 
         if (!cursor.gotoFirstChild()) {
-            return result;
+            return try result.toOwnedSlice(allocator);
         }
 
         while (true) {
@@ -236,7 +234,7 @@ pub const Node = extern struct {
             if (!cursor.gotoNextSibling()) break;
         }
 
-        return result;
+        return try result.toOwnedSlice(allocator);
     }
 
     /// Get the node's first child that contains or starts after the given byte offset.
@@ -263,40 +261,34 @@ pub const Node = extern struct {
         return ts_node_child_by_field_name(self, name.ptr, @intCast(name.len)).orNull();
     }
 
-    /// Return a list of this node's children with the given field ID.
+    /// Get this node's children with the given field ID.
     ///
-    /// The caller is responsible for releasing the
-    /// allocated memory through `std.ArrayList.deinit()`.
-    pub fn childrenByFieldId(self: Node, allocator: std.mem.Allocator, field_id: u16) !std.ArrayList(Node) {
-        var result: std.ArrayList(Node) =
-            if (comptime builtin.zig_version.minor >= 15) .empty else .init(allocator);
-        errdefer result.deinit();
+    /// The caller owns the memory.
+    pub fn childrenByFieldId(self: Node, allocator: std.mem.Allocator, field_id: u16) ![]Node {
+        var result: std.ArrayListUnmanaged(Node) = .empty;
+        errdefer result.deinit(allocator);
 
         var cursor = TreeCursor.create(self);
         defer cursor.destroy();
 
         if (field_id == 0 or !cursor.gotoFirstChild()) {
-            return result;
+            return try result.toOwnedSlice(allocator);
         }
 
         while (true) {
             if (cursor.currentFieldId() == field_id) {
-                try if (comptime builtin.zig_version.minor >= 15)
-                    result.append(allocator, cursor.currentNode())
-                else
-                    result.append(cursor.currentNode());
+                try result.append(allocator, cursor.currentNode());
             }
             if (!cursor.gotoNextSibling()) break;
         }
 
-        return result;
+        return try result.toOwnedSlice(allocator);
     }
 
-    /// Return a list of this node's children with the given field name.
+    /// Get this node's children with the given field name.
     ///
-    /// The caller is responsible for releasing the
-    /// allocated memory through `std.ArrayList.deinit()`.
-    pub fn childrenByFieldName(self: Node, allocator: std.mem.Allocator, field_name: []const u8) !std.ArrayList(Node) {
+    /// The caller owns the memory
+    pub fn childrenByFieldName(self: Node, allocator: std.mem.Allocator, field_name: []const u8) ![]Node {
         const field_id = self.language().fieldIdForName(field_name);
         return self.childrenByFieldId(allocator, field_id);
     }

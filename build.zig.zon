@@ -6,7 +6,7 @@
     .dependencies = .{
         .tree_sitter = .{
             .url = "https://github.com/tree-sitter/tree-sitter/archive/refs/heads/release-0.25.tar.gz",
-            .hash = "tree_sitter-0.25.8-Tw2sR9G6CwCGeEE-eJIO4ZF6OGxjoOGabM10htV-Tu4N",
+            .hash = "tree_sitter-0.25.8-Tw2sRxW7CwCiJosGHB0dIWv0tROYNsI6hSEzNmsfOrhR",
         },
         .tree_sitter_c = .{
             .url = "https://github.com/tree-sitter/tree-sitter-c/archive/976d785.tar.gz",

@@ -240,19 +240,19 @@ test "Node" {
     try testing.expectEqualStrings("body", node.fieldNameForNamedChild(2).?);
 
     const children = try node.children(testing.allocator);
-    defer std.ArrayList(ts.Node).deinit(children);
-    try testing.expectEqualStrings("primitive_type", children.items[0].type());
-    try testing.expectEqualStrings("function_declarator", children.items[1].type());
-    try testing.expectEqualStrings("compound_statement", children.items[2].type());
+    defer testing.allocator.free(children);
+    try testing.expectEqualStrings("primitive_type", children[0].type());
+    try testing.expectEqualStrings("function_declarator", children[1].type());
+    try testing.expectEqualStrings("compound_statement", children[2].type());
 
     const named_children = try node.namedChildren(testing.allocator);
-    defer std.ArrayList(ts.Node).deinit(named_children);
-    try testing.expectEqualDeep(named_children, children);
+    defer testing.allocator.free(named_children);
+    try testing.expectEqualSlices(ts.Node, named_children, children);
 
     const children_by_field_name = try node.childrenByFieldName(testing.allocator, "body");
-    defer std.ArrayList(ts.Node).deinit(children_by_field_name);
-    try testing.expectEqual(1, children_by_field_name.items.len);
-    try testing.expectEqualDeep(children_by_field_name.items[0], children.items[2]);
+    defer testing.allocator.free(children_by_field_name);
+    try testing.expectEqual(1, children_by_field_name.len);
+    try testing.expect(children_by_field_name[0].eql(children[2]));
 
     const sexp = try node.toSexp(testing.allocator);
     defer testing.allocator.free(sexp);
