@@ -19,7 +19,10 @@ pub fn build(b: *std.Build) !void {
         .@"enable-wasm" = enable_wasm,
     });
     const core_lib = core.artifact("tree-sitter");
-    const wasmtime = if (enable_wasm) core.builder.lazyDependency(ts.wasmtimeDep(target.result), .{}) else null;
+    const wasmtime = if (enable_wasm)
+        core.builder.lazyDependency(ts.wasmtimeDep(target.result), .{})
+    else
+        null;
 
     const module = b.addModule("tree_sitter", .{
         .root_source_file = b.path("src/root.zig"),
@@ -28,23 +31,15 @@ pub fn build(b: *std.Build) !void {
     });
     module.linkLibrary(core_lib);
     module.addOptions("build", options);
-    if (wasmtime) |dep| {
-        module.addLibraryPath(dep.path("lib"));
-        module.linkSystemLibrary("wasmtime", .{
-            .preferred_link_mode = .static,
-        });
-    }
 
-    const docs = b.addObject(.{
-        .name = "tree_sitter",
-        .root_source_file = b.path("src/root.zig"),
-        .target = target,
-        .optimize = .Debug,
+    const lib = b.addLibrary(.{
+        .name = "zig-tree-sitter",
+        .root_module = module,
+        .linkage = .static,
     });
-    docs.root_module.addOptions("build", options);
 
     const install_docs = b.addInstallDirectory(.{
-        .source_dir = docs.getEmittedDocs(),
+        .source_dir = lib.getEmittedDocs(),
         .install_dir = .prefix,
         .install_subdir = "docs",
     });
@@ -52,41 +47,54 @@ pub fn build(b: *std.Build) !void {
     const docs_step = b.step("docs", "Install generated docs");
     docs_step.dependOn(&install_docs.step);
 
-    const tests = b.addTest(.{
+    const test_mod = b.createModule(.{
         .root_source_file = b.path("src/test.zig"),
         .target = target,
         .optimize = optimize,
     });
-    tests.linkLibrary(core_lib);
-    tests.root_module.addOptions("build", options);
-    if (wasmtime) |dep| {
-        tests.root_module.addLibraryPath(dep.path("lib"));
-        tests.root_module.linkSystemLibrary("wasmtime", .{
-            .preferred_link_mode = .static,
-        });
-        tests.root_module.linkSystemLibrary("unwind", .{});
-        if (target.result.os.tag == .windows) {
-            if (target.result.abi != .msvc) {
-                tests.root_module.linkSystemLibrary("unwind", .{});
-                tests.root_module.linkSystemLibrary("advapi32", .{});
-                tests.root_module.linkSystemLibrary("bcrypt", .{});
-                tests.root_module.linkSystemLibrary("ntdll", .{});
-                tests.root_module.linkSystemLibrary("ole32", .{});
-                tests.root_module.linkSystemLibrary("shell32", .{});
-                tests.root_module.linkSystemLibrary("userenv", .{});
-                tests.root_module.linkSystemLibrary("ws2_32", .{});
-            } else {
-                const fail = b.addFail("FIXME: cannot build with enable-wasm for MSVC");
-                tests.step.dependOn(&fail.step);
-            }
-        }
-    }
+    test_mod.linkLibrary(lib);
+    test_mod.addOptions("build", options);
 
-    const run_tests = b.addRunArtifact(tests);
+    const run_tests = b.addRunArtifact(b.addTest(.{ .root_module = test_mod }));
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_tests.step);
 
+    if (wasmtime) |dep| {
+        if (target.result.os.tag == .windows) {
+            if (target.result.abi != .msvc) {
+                const copy_wasmtime = b.addInstallLibFile(dep.path("lib/libwasmtime.a"), "wasmtime.lib");
+                lib.step.dependOn(&copy_wasmtime.step);
+                module.addLibraryPath(b.path("zig-out/lib"));
+                test_mod.addLibraryPath(b.path("zig-out/lib"));
+            } else {
+                const fail = b.addFail("FIXME: cannot build with enable-wasm for MSVC");
+                test_step.dependOn(&fail.step);
+            }
+
+            test_mod.linkSystemLibrary("advapi32", .{});
+            test_mod.linkSystemLibrary("bcrypt", .{});
+            test_mod.linkSystemLibrary("ntdll", .{});
+            test_mod.linkSystemLibrary("ole32", .{});
+            test_mod.linkSystemLibrary("shell32", .{});
+            test_mod.linkSystemLibrary("userenv", .{});
+            test_mod.linkSystemLibrary("ws2_32", .{});
+        } else {
+            module.addLibraryPath(dep.path("lib"));
+            test_mod.addLibraryPath(dep.path("lib"));
+        }
+
+        module.linkSystemLibrary("wasmtime", .{
+            .use_pkg_config = .no,
+            .search_strategy = .no_fallback,
+            .preferred_link_mode = .static,
+        });
+        test_mod.linkSystemLibrary("unwind", .{
+            .use_pkg_config = .no,
+        });
+    }
+
     // HACK: fetch tree-sitter-c only for tests (ziglang/zig#19914)
+    if (b.pkg_hash.len > 0) return;
     var args = try std.process.argsWithAllocator(b.allocator);
     defer args.deinit();
     while (args.next()) |a| {
@@ -95,16 +103,14 @@ pub fn build(b: *std.Build) !void {
                 .target = target,
                 .optimize = optimize,
             }) orelse continue;
-            tests.linkLibrary(dep.artifact("tree-sitter-c"));
+            test_mod.linkLibrary(dep.artifact("tree-sitter-c"));
 
             if (enable_wasm) {
-                // FIXME: prevent the file from being downloaded multiple times
-                std.log.info("Downloading {s}\n", .{ wasm_url });
-                const run_curl = b.addSystemCommand(&.{"curl", "-LSsf", wasm_url, "-o"});
+                const run_curl = b.addSystemCommand(&.{ "curl", "-LSsf", wasm_url, "-o" });
                 const wasm_file = run_curl.addOutputFileArg("tree-sitter-c.wasm");
                 run_curl.expectStdErrEqual("");
-                tests.step.dependOn(&run_curl.step);
-                tests.root_module.addAnonymousImport("tree-sitter-c.wasm", .{
+                test_step.dependOn(&run_curl.step);
+                test_mod.addAnonymousImport("tree-sitter-c.wasm", .{
                     .root_source_file = wasm_file,
                 });
             }

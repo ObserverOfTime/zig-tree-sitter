@@ -373,13 +373,19 @@ test "Wasm" {
     defer engine.deinit();
 
     var error_message: []u8 = undefined;
-    const store = try ts.WasmStore.create(testing.allocator, engine, &error_message);
-    errdefer testing.allocator.free(error_message);
+    const store = ts.WasmStore.create(testing.allocator, engine, &error_message) catch |err| {
+        std.log.err("{s}", .{ error_message });
+        testing.allocator.free(error_message);
+        return err;
+    };
     defer store.destroy();
 
     const wasm = @embedFile("tree-sitter-c.wasm");
-    const language = try store.loadLanguage(testing.allocator, "c", wasm, &error_message);
-    errdefer testing.allocator.free(error_message);
+    const language = store.loadLanguage(testing.allocator, "c", wasm, &error_message) catch |err| {
+        std.log.err("{s}", .{ error_message });
+        testing.allocator.free(error_message);
+        return err;
+    };
     defer language.destroy();
 
     try testing.expect(language.isWasm());

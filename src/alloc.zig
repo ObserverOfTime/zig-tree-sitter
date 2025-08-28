@@ -6,7 +6,7 @@ var alloc_registry: ?std.AutoHashMap(usize, usize) = null;
 
 var alloc_mutex: std.Thread.Mutex = .{};
 
-pub var free_fn: *const fn(?*anyopaque) callconv(.C) void = std.c.free;
+pub var free_fn: *const fn(?*anyopaque) callconv(.c) void = std.c.free;
 
 /// Set the allocator used by the library.
 ///
@@ -39,7 +39,7 @@ pub fn setAllocator(allocator: ?std.mem.Allocator) void {
     }
 }
 
-fn malloc(size: usize) callconv(.C) ?*anyopaque {
+fn malloc(size: usize) callconv(.c) ?*anyopaque {
     alloc_mutex.lock();
     defer alloc_mutex.unlock();
 
@@ -55,7 +55,7 @@ fn malloc(size: usize) callconv(.C) ?*anyopaque {
     }
 }
 
-fn calloc(nmemb: usize, size: usize) callconv(.C) ?*anyopaque {
+fn calloc(nmemb: usize, size: usize) callconv(.c) ?*anyopaque {
     alloc_mutex.lock();
     defer alloc_mutex.unlock();
 
@@ -73,7 +73,7 @@ fn calloc(nmemb: usize, size: usize) callconv(.C) ?*anyopaque {
     }
 }
 
-fn realloc(ptr: ?*anyopaque, size: usize) callconv(.C) ?*anyopaque {
+fn realloc(ptr: ?*anyopaque, size: usize) callconv(.c) ?*anyopaque {
     const old_ptr = ptr orelse malloc(size);
 
     alloc_mutex.lock();
@@ -102,7 +102,7 @@ fn realloc(ptr: ?*anyopaque, size: usize) callconv(.C) ?*anyopaque {
     return malloc(size);
 }
 
-fn free(ptr: ?*anyopaque) callconv(.C) void {
+fn free(ptr: ?*anyopaque) callconv(.c) void {
     alloc_mutex.lock();
     defer alloc_mutex.unlock();
 
@@ -117,8 +117,8 @@ fn free(ptr: ?*anyopaque) callconv(.C) void {
 }
 
 extern fn ts_set_allocator(
-    new_malloc: ?*const fn (size: usize) callconv(.C) ?*anyopaque,
-    new_calloc: ?*const fn (nmemb: usize, size: usize) callconv(.C) ?*anyopaque,
-    new_realloc: ?*const fn (ptr: ?*anyopaque, size: usize) callconv(.C) ?*anyopaque,
-    new_free: ?*const fn (ptr: ?*anyopaque) callconv(.C) void,
+    new_malloc: ?*const fn (size: usize) callconv(.c) ?*anyopaque,
+    new_calloc: ?*const fn (nmemb: usize, size: usize) callconv(.c) ?*anyopaque,
+    new_realloc: ?*const fn (ptr: ?*anyopaque, size: usize) callconv(.c) ?*anyopaque,
+    new_free: ?*const fn (ptr: ?*anyopaque) callconv(.c) void,
 ) void;

@@ -1,4 +1,3 @@
-const builtin = @import("builtin");
 const std = @import("std");
 
 const alloc = @import("alloc.zig");
@@ -194,7 +193,7 @@ pub const Node = extern struct {
     ///
     /// The caller owns the memory.
     pub fn children(self: Node, allocator: std.mem.Allocator) ![]Node {
-        var result: std.ArrayListUnmanaged(Node) = try .initCapacity(allocator, self.childCount());
+        var result: std.ArrayList(Node) = try .initCapacity(allocator, self.childCount());
         errdefer result.deinit(allocator);
 
         var cursor = TreeCursor.create(self);
@@ -216,7 +215,7 @@ pub const Node = extern struct {
     ///
     /// The caller owns the memory.
     pub fn namedChildren(self: Node, allocator: std.mem.Allocator) ![]Node {
-        var result: std.ArrayListUnmanaged(Node) = try .initCapacity(allocator, self.namedChildCount());
+        var result: std.ArrayList(Node) = try .initCapacity(allocator, self.namedChildCount());
         errdefer result.deinit(allocator);
 
         var cursor = TreeCursor.create(self);
@@ -265,7 +264,7 @@ pub const Node = extern struct {
     ///
     /// The caller owns the memory.
     pub fn childrenByFieldId(self: Node, allocator: std.mem.Allocator, field_id: u16) ![]Node {
-        var result: std.ArrayListUnmanaged(Node) = .empty;
+        var result: std.ArrayList(Node) = .empty;
         errdefer result.deinit(allocator);
 
         var cursor = TreeCursor.create(self);
@@ -348,25 +347,16 @@ pub const Node = extern struct {
     }
 
     /// Format the node as a string.
-    ///
-    /// Use `{s}` to get an S-expression.
-    pub fn format(self: Node, comptime fmt: []const u8, _: std.fmt.FormatOptions, writer: anytype) !void {
-        if (comptime std.mem.eql(u8, fmt, "s")) {
-            const string = ts_node_string(self);
-            defer alloc.free_fn(@ptrCast(@constCast(string)));
-            return writer.print("{s}", .{ std.mem.span(string) });
-        }
-
-        if (comptime fmt.len == 0 or std.mem.eql(u8, fmt, "any")) {
-            return writer.print("Node(id=0x{x}, type={s}, start={d}, end={d})", .{
+    pub fn format(self: Node, writer: *std.io.Writer) !void {
+        try writer.print(
+            "Node(id=0x{x}, type={s}, start={d}, end={d})",
+            .{
                 @intFromPtr(self.id),
                 self.type(),
                 self.startByte(),
                 self.endByte(),
-            });
-        }
-
-        std.fmt.invalidFmtError(fmt, self);
+            },
+        );
     }
 
     inline fn orNull(self: Node) ?Node {
