@@ -48,7 +48,7 @@ pub const Parser = opaque {
     ///
     /// **Example:**
     /// ```zig
-    /// fn scopedLogger(_: ?*anyopaque, log_type: LogType, buffer: [*:0]const u8) callconv(.C) void {
+    /// fn scopedLogger(_: ?*anyopaque, log_type: LogType, buffer: [*:0]const u8) callconv(.c) void {
     ///     const scope = switch (log_type) {
     ///         .Parse => std.log.scoped(.PARSE),
     ///         .Lex => std.log.scoped(.LEX),
@@ -226,7 +226,7 @@ pub const Parser = opaque {
     pub const Options = extern struct {
         payload: ?*anyopaque = null,
         /// A callback that receives the parse state during parsing.
-        progress_callback: *const fn (state: State) callconv(.C) bool,
+        progress_callback: *const fn (state: State) callconv(.c) bool,
     };
 };
 

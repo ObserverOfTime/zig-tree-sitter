@@ -13,7 +13,7 @@ const WasmError = extern struct {
         Instantiate,
         Allocate,
     },
-    message: [*c]const u8,
+    message: [*c]const u8 = undefined,
 };
 
 // TODO: delegate to wasmtime Zig bindings when available
@@ -47,7 +47,7 @@ pub const WasmStore = opaque {
     /// Create a Wasm store.
     pub fn create(allocator: std.mem.Allocator, engine: *WasmEngine, error_message: *[]u8) Error!*WasmStore {
         if (comptime !build.enable_wasm) @compileError("Wasm is not supported");
-        var wasm_error: WasmError = .{ .kind = .None, .message = undefined };
+        var wasm_error: WasmError = .{ .kind = .None };
         const store = ts_wasm_store_new(engine, &wasm_error);
         if (wasm_error.kind == .None) return store.?;
 
@@ -85,13 +85,13 @@ pub const WasmStore = opaque {
         error_message: *[]u8,
     ) Error!*const Language {
         if (comptime !build.enable_wasm) @compileError("Wasm is not supported");
-        var wasm_error: WasmError = .{ .kind = .None, .message = undefined };
+        var wasm_error: WasmError = .{ .kind = .None };
         const language = ts_wasm_store_load_language(self, name.ptr, wasm.ptr, @intCast(wasm.len), &wasm_error);
         if (wasm_error.kind == .None) return language.?;
 
         const message: []const u8 = std.mem.span(wasm_error.message);
         error_message.* = allocator.dupe(u8, message) catch return error.AllocateError;
-        std.c.free(@ptrCast(@constCast(wasm_error.message)));
+        alloc.free_fn(@ptrCast(@constCast(wasm_error.message)));
         return switch (wasm_error.kind) {
             .Parse => error.ParseError,
             .Compile => error.CompileError,
@@ -116,14 +116,14 @@ pub const WasmStore = opaque {
     };
 };
 
-extern fn ts_wasm_store_new(engine: *WasmEngine, @"error": [*c]WasmError) ?*WasmStore;
+extern fn ts_wasm_store_new(engine: *WasmEngine, wasm_error: *WasmError) ?*WasmStore;
 extern fn ts_wasm_store_delete(store: *WasmStore) void;
 extern fn ts_wasm_store_load_language(
     store: *WasmStore,
     name: [*c]const u8,
     wasm: [*c]const u8,
     wasm_len: u32,
-    @"error": [*c]WasmError,
+    wasm_error: *WasmError,
 ) ?*const Language;
 extern fn ts_wasm_store_language_count(store: *const WasmStore) usize;
 

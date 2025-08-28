@@ -14,7 +14,7 @@ const LanguageMetadata = extern struct {
     patch_version: u8,
 };
 
-const LanguageFn = *const fn () callconv(.C) *const Language;
+const LanguageFn = *const fn () callconv(.c) *const Language;
 
 /// An opaque object that defines how to parse a particular language.
 pub const Language = opaque {
