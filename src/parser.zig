@@ -6,7 +6,6 @@ const InputEdit = @import("types.zig").InputEdit;
 const InputEncoding = @import("types.zig").InputEncoding;
 const Language = @import("language.zig").Language;
 const Logger = @import("types.zig").Logger;
-const LogType = @import("types.zig").LogType;
 const Node = @import("node.zig").Node;
 const Point = @import("types.zig").Point;
 const Range = @import("types.zig").Range;
@@ -48,10 +47,10 @@ pub const Parser = opaque {
     ///
     /// **Example:**
     /// ```zig
-    /// fn scopedLogger(_: ?*anyopaque, log_type: LogType, buffer: [*:0]const u8) callconv(.c) void {
+    /// fn scopedLogger(_: ?*anyopaque, log_type: Logger.LogType, buffer: [*:0]const u8) callconv(.c) void {
     ///     const scope = switch (log_type) {
-    ///         .Parse => std.log.scoped(.PARSE),
-    ///         .Lex => std.log.scoped(.LEX),
+    ///         .parse => std.log.scoped(.PARSE),
+    ///         .lex => std.log.scoped(.LEX),
     ///     };
     ///     scope.debug("{s}", .{ std.mem.span(buffer) });
     /// }
@@ -147,7 +146,7 @@ pub const Parser = opaque {
         options: ?Options,
     ) error{ NoLanguage, Cancellation, InvalidEncoding }!*Tree {
         if (self.getLanguage() == null) return error.NoLanguage;
-        if (input.encoding == .Custom and input.decode == null) return error.InvalidEncoding;
+        if (input.encoding == .custom and input.decode == null) return error.InvalidEncoding;
         const new_tree = if (options) |o|
             ts_parser_parse_with_options(self, old_tree, input, o)
         else
@@ -156,7 +155,7 @@ pub const Parser = opaque {
     }
 
     /// Use the parser to parse some source code stored in one contiguous buffer,
-    /// optionally with a given encoding (defaults to `InputEncoding.UTF_8`).
+    /// optionally with a given encoding (defaults to `InputEncoding.utf8`).
     ///
     /// See the `parseInput()` method for more details.
     pub fn parseBuffer(
@@ -166,13 +165,13 @@ pub const Parser = opaque {
         encoding: ?InputEncoding,
     ) error{ NoLanguage, Cancellation, InvalidEncoding }!*Tree {
         if (self.getLanguage() == null) return error.NoLanguage;
-        if (encoding == .Custom) return error.InvalidEncoding;
+        if (encoding == .custom) return error.InvalidEncoding;
         return ts_parser_parse_string_encoding(
             self,
             old_tree,
             buffer.ptr,
             @intCast(buffer.len),
-            encoding orelse InputEncoding.UTF_8,
+            encoding orelse .utf8,
         ) orelse error.Cancellation;
     }
 

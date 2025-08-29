@@ -7,11 +7,11 @@ const Language = @import("language.zig").Language;
 
 const WasmError = extern struct {
     kind: enum(c_uint) {
-        None,
-        Parse,
-        Compile,
-        Instantiate,
-        Allocate,
+        none,
+        parse,
+        compile,
+        instantiate,
+        allocate,
     },
     message: [*c]const u8 = undefined,
 };
@@ -47,19 +47,19 @@ pub const WasmStore = opaque {
     /// Create a Wasm store.
     pub fn create(allocator: std.mem.Allocator, engine: *WasmEngine, error_message: *[]u8) Error!*WasmStore {
         if (comptime !build.enable_wasm) @compileError("Wasm is not supported");
-        var wasm_error: WasmError = .{ .kind = .None };
+        var wasm_error: WasmError = .{ .kind = .none };
         const store = ts_wasm_store_new(engine, &wasm_error);
-        if (wasm_error.kind == .None) return store.?;
+        if (wasm_error.kind == .none) return store.?;
 
         const message: []const u8 = std.mem.span(wasm_error.message);
         error_message.* = allocator.dupe(u8, message) catch return error.AllocateError;
         alloc.free_fn(@ptrCast(@constCast(wasm_error.message)));
         return switch (wasm_error.kind) {
-            .Parse => error.ParseError,
-            .Compile => error.CompileError,
-            .Instantiate => error.InstantiateError,
-            .Allocate => error.AllocateError,
-            .None => unreachable,
+            .parse => error.ParseError,
+            .compile => error.CompileError,
+            .instantiate => error.InstantiateError,
+            .allocate => error.AllocateError,
+            .none => unreachable,
         };
     }
 
@@ -85,19 +85,19 @@ pub const WasmStore = opaque {
         error_message: *[]u8,
     ) Error!*const Language {
         if (comptime !build.enable_wasm) @compileError("Wasm is not supported");
-        var wasm_error: WasmError = .{ .kind = .None };
+        var wasm_error: WasmError = .{ .kind = .none };
         const language = ts_wasm_store_load_language(self, name.ptr, wasm.ptr, @intCast(wasm.len), &wasm_error);
-        if (wasm_error.kind == .None) return language.?;
+        if (wasm_error.kind == .none) return language.?;
 
         const message: []const u8 = std.mem.span(wasm_error.message);
         error_message.* = allocator.dupe(u8, message) catch return error.AllocateError;
         alloc.free_fn(@ptrCast(@constCast(wasm_error.message)));
         return switch (wasm_error.kind) {
-            .Parse => error.ParseError,
-            .Compile => error.CompileError,
-            .Instantiate => error.InstantiateError,
-            .Allocate => error.AllocateError,
-            .None => unreachable,
+            .parse => error.ParseError,
+            .compile => error.CompileError,
+            .instantiate => error.InstantiateError,
+            .allocate => error.AllocateError,
+            .none => unreachable,
         };
     }
 

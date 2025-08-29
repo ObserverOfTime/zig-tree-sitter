@@ -2,10 +2,10 @@ const std = @import("std");
 
 /// The type of a grammar symbol.
 const SymbolType = enum(c_uint) {
-    Regular,
-    Anonymous,
-    Supertype,
-    Auxiliary,
+    regular,
+    anonymous,
+    supertype,
+    auxiliary,
 };
 
 const LanguageMetadata = extern struct {
@@ -116,18 +116,18 @@ pub const Language = opaque {
 
     /// Check if the node for the given numerical ID is named.
     pub inline fn isNamed(self: *const Language, symbol: u16) bool {
-        return ts_language_symbol_type(self, symbol) == SymbolType.Regular;
+        return ts_language_symbol_type(self, symbol) == .regular;
     }
 
     /// Check if the node for the given numerical ID is visible.
     pub inline fn isVisible(self: *const Language, symbol: u16) bool {
         const symbol_type = ts_language_symbol_type(self, symbol);
-        return @intFromEnum(symbol_type) <= @intFromEnum(SymbolType.Anonymous);
+        return @intFromEnum(symbol_type) <= @intFromEnum(SymbolType.anonymous);
     }
 
     /// Check if the node for the given numerical ID is a supertype.
     pub inline fn isSupertype(self: *const Language, symbol: u16) bool {
-        return ts_language_symbol_type(self, symbol) == SymbolType.Supertype;
+        return ts_language_symbol_type(self, symbol) == .supertype;
     }
 
     /// Get the next parse state.

@@ -18,7 +18,7 @@ pub const Input = extern struct {
         bytes_read: *u32,
     ) callconv(.c) [*c]const u8,
     /// An indication of how the text is encoded.
-    encoding: InputEncoding = InputEncoding.UTF_8,
+    encoding: InputEncoding = .utf8,
     /// This function reads one code point from the given string, returning
     /// the number of bytes consumed. It should write the code point to
     /// the `code_point` pointer, or write `-1` if the input is invalid.
@@ -49,6 +49,12 @@ pub const Logger = extern struct {
         log_type: LogType,
         buffer: [*:0]const u8,
     ) callconv(.c) void = null,
+
+    /// The type of a log message.
+    pub const LogType = enum(c_uint) {
+        parse,
+        lex,
+    };
 };
 
 /// A position in a text document in terms of rows and columns.
@@ -100,14 +106,8 @@ pub const Range = extern struct {
 
 /// The encoding of source code.
 pub const InputEncoding = enum(c_uint) {
-    UTF_8,
-    UTF_16LE,
-    UTF_16BE,
-    Custom,
-};
-
-/// The type of a log message.
-pub const LogType = enum(c_uint) {
-    Parse,
-    Lex,
+    utf8,
+    utf16le,
+    utf16be,
+    custom,
 };

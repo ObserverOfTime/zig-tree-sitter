@@ -9,14 +9,13 @@ pub const LANGUAGE_VERSION = 15;
 /// The earliest ABI version that is supported by the current version of the library.
 pub const MIN_COMPATIBLE_LANGUAGE_VERSION = 13;
 
-const structs = @import("types.zig");
-pub const Input = structs.Input;
-pub const InputEdit = structs.InputEdit;
-pub const InputEncoding = structs.InputEncoding;
-pub const LogType = structs.LogType;
-pub const Logger = structs.Logger;
-pub const Point = structs.Point;
-pub const Range = structs.Range;
+const types = @import("types.zig");
+pub const Input = types.Input;
+pub const InputEdit = types.InputEdit;
+pub const InputEncoding = types.InputEncoding;
+pub const Logger = types.Logger;
+pub const Point = types.Point;
+pub const Range = types.Range;
 
 pub const Language = @import("language.zig").Language;
 pub const LookaheadIterator = @import("lookahead_iterator.zig").LookaheadIterator;
