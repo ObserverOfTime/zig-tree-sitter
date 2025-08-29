@@ -55,7 +55,13 @@ pub fn build(b: *std.Build) !void {
     test_mod.linkLibrary(lib);
     test_mod.addOptions("build", options);
 
-    const run_tests = b.addRunArtifact(b.addTest(.{ .root_module = test_mod }));
+    const run_tests = b.addRunArtifact(b.addTest(.{
+        .root_module = test_mod,
+        .test_runner = .{
+            .mode = .simple,
+            .path = b.path("test_runner.zig"),
+        },
+    }));
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_tests.step);
 
@@ -108,6 +114,7 @@ pub fn build(b: *std.Build) !void {
             if (enable_wasm) {
                 const run_curl = b.addSystemCommand(&.{ "curl", "-LSsf", wasm_url, "-o" });
                 const wasm_file = run_curl.addOutputFileArg("tree-sitter-c.wasm");
+                run_curl.expectExitCode(0);
                 run_curl.expectStdErrEqual("");
                 test_step.dependOn(&run_curl.step);
                 test_mod.addAnonymousImport("tree-sitter-c.wasm", .{
