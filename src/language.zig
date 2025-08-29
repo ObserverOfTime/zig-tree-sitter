@@ -156,6 +156,14 @@ pub const Language = opaque {
         const results = ts_language_supertypes(self, &length);
         return if (length > 0) results[0..length] else &.{};
     }
+
+    /// Format the language as a string.
+    pub fn format(self: Language, writer: *std.Io.Writer) !void {
+        return try writer.print(
+            "Language(id=0x{*}, version={d}, name={?s})",
+            .{ self, self.abi_version(), self.name() },
+        );
+    }
 };
 
 extern fn ts_language_abi_version(self: *const Language) u32;

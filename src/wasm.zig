@@ -1,7 +1,7 @@
-const alloc = @import("alloc.zig");
 const build = @import("build");
 const std = @import("std");
 
+const alloc = @import("alloc.zig");
 const Parser = @import("parser.zig").Parser;
 const Language = @import("language.zig").Language;
 

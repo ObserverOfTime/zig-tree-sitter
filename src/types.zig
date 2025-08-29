@@ -1,3 +1,5 @@
+const Writer = @import("std").Io.Writer;
+
 /// A struct that specifies how to read input text.
 pub const Input = extern struct {
     /// An arbitrary pointer that will be passed
@@ -17,7 +19,7 @@ pub const Input = extern struct {
     ) callconv(.c) [*c]const u8,
     /// An indication of how the text is encoded.
     encoding: InputEncoding = InputEncoding.UTF_8,
-    // This function reads one code point from the given string, returning
+    /// This function reads one code point from the given string, returning
     /// the number of bytes consumed. It should write the code point to
     /// the `code_point` pointer, or write `-1` if the input is invalid.
     decode: ?*const fn (
@@ -72,6 +74,11 @@ pub const Point = extern struct {
         if (col_diff == 0) return 0;
         return if (col_diff > 0) 1 else -1;
     }
+
+    /// Format the point as a string.
+    pub fn format(self: Point, writer: *Writer) !void {
+        try writer.print("({d}, {d})", .{ self.row, self.column });
+    }
 };
 
 /// A range of positions in a text document,
@@ -81,6 +88,14 @@ pub const Range = extern struct {
     end_point: Point = .{ .row = 0xFFFFFFFF, .column = 0xFFFFFFFF },
     start_byte: u32 = 0,
     end_byte: u32 = 0xFFFFFFFF,
+
+    /// Format the range as a string.
+    pub fn format(self: Range, writer: *Writer) !void {
+        try writer.print(
+            "Range(start_point={f}, end_point={f}, start_byte={d}, end_byte={d})",
+            .{ self.start_point, self.end_point, self.start_byte, self.end_byte },
+        );
+    }
 };
 
 /// The encoding of source code.
