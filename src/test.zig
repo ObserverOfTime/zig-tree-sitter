@@ -7,8 +7,8 @@ test "Language" {
     const language = ts.Language.load("c");
     defer language.destroy();
 
-    try testing.expectEqual(15, language.abi_version());
-    try testing.expect(language.semantic_version() != null);
+    try testing.expectEqual(15, language.abiVersion());
+    try testing.expect(language.semanticVersion() != null);
     try testing.expect(language.symbolCount() > 1);
     try testing.expect(language.fieldCount() > 1);
     try testing.expect(language.stateCount() > 1);
@@ -64,8 +64,6 @@ test "Parser" {
 
     try testing.expectEqual(language, parser.getLanguage());
     try testing.expectEqual(null, parser.getLogger().log);
-    try testing.expectEqual(0, parser.getTimeoutMicros());
-    try testing.expectEqual(null, parser.getCancellationFlag());
 
     try testing.expectEqualSlices(ts.Range, &.{.{}}, parser.getIncludedRanges());
     try testing.expectError(error.RangeOverlap, parser.setIncludedRanges(&.{ .{ .start_byte = 1 }, .{} }));
@@ -347,7 +345,6 @@ test "QueryCursor" {
 
     try testing.expect(!cursor.didExceedMatchLimit());
     try testing.expectEqual(0xFFFFFFFF, cursor.getMatchLimit());
-    try testing.expectEqual(0, cursor.getTimeoutMicros());
 
     var match = cursor.nextMatch().?;
     try testing.expectEqual(0, match.id);

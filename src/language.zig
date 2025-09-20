@@ -50,25 +50,18 @@ pub const Language = opaque {
     }
 
     /// Get the ABI version number for this language.
-    pub inline fn abi_version(self: *const Language) u32 {
+    pub inline fn abiVersion(self: *const Language) u32 {
         return ts_language_abi_version(self);
     }
 
     /// Get the semantic version for this language.
-    pub fn semantic_version(self: *const Language) ?std.SemanticVersion {
+    pub fn semanticVersion(self: *const Language) ?std.SemanticVersion {
         const data = ts_language_metadata(self) orelse return null;
         return .{
             .major = @intCast(data.major_version),
             .minor = @intCast(data.minor_version),
             .patch = @intCast(data.patch_version),
         };
-    }
-
-    /// Get the ABI version number for this language.
-    ///
-    /// **Deprecated.** Use `abi_version()` instead.
-    pub inline fn version(self: *const Language) u32 {
-        return ts_language_abi_version(self);
     }
 
     /// Check if the language came from a Wasm module.
@@ -161,7 +154,7 @@ pub const Language = opaque {
     pub fn format(self: Language, writer: *std.Io.Writer) !void {
         return try writer.print(
             "Language(id=0x{*}, version={d}, name={?s})",
-            .{ self, self.abi_version(), self.name() },
+            .{ self, self.abiVersion(), self.name() },
         );
     }
 };
