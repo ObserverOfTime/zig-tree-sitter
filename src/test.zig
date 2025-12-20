@@ -402,6 +402,6 @@ test "Wasm" {
     try testing.expectEqualStrings("translation_unit", tree.rootNode().type());
 
     try testing.expectError(error.ParseError, store.loadLanguage(testing.allocator, "c", "", &error_message));
-    try testing.expectEqualStrings("failed to parse dylink section of wasm module", error_message);
+    try testing.expectEqualStrings("failed to parse dylink section of Wasm module", error_message);
     testing.allocator.free(error_message);
 }
