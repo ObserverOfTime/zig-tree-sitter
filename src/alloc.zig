@@ -4,7 +4,7 @@ var ts_allocator: ?std.mem.Allocator = null;
 
 var alloc_registry: ?std.AutoHashMap(usize, usize) = null;
 
-var alloc_mutex: std.Thread.Mutex = .{};
+var alloc_mutex: std.atomic.Mutex = .unlocked;
 
 pub var free_fn: *const fn(?*anyopaque) callconv(.c) void = std.c.free;
 
@@ -40,7 +40,9 @@ pub fn setAllocator(allocator: ?std.mem.Allocator) void {
 }
 
 fn malloc(size: usize) callconv(.c) ?*anyopaque {
-    alloc_mutex.lock();
+    while (!alloc_mutex.tryLock()) {
+        std.atomic.spinLoopHint();
+    }
     defer alloc_mutex.unlock();
 
     if (ts_allocator.?.alloc(u8, size)) |slice| {
@@ -56,7 +58,9 @@ fn malloc(size: usize) callconv(.c) ?*anyopaque {
 }
 
 fn calloc(nmemb: usize, size: usize) callconv(.c) ?*anyopaque {
-    alloc_mutex.lock();
+    while (!alloc_mutex.tryLock()) {
+        std.atomic.spinLoopHint();
+    }
     defer alloc_mutex.unlock();
 
     if (ts_allocator.?.alloc(u8, nmemb * size)) |new_mem| {
@@ -76,7 +80,9 @@ fn calloc(nmemb: usize, size: usize) callconv(.c) ?*anyopaque {
 fn realloc(ptr: ?*anyopaque, size: usize) callconv(.c) ?*anyopaque {
     const old_ptr = ptr orelse malloc(size);
 
-    alloc_mutex.lock();
+    while (!alloc_mutex.tryLock()) {
+        std.atomic.spinLoopHint();
+    }
     defer alloc_mutex.unlock();
 
     const old_size = alloc_registry.?.get(@intFromPtr(old_ptr)) orelse return malloc(size);
@@ -103,7 +109,9 @@ fn realloc(ptr: ?*anyopaque, size: usize) callconv(.c) ?*anyopaque {
 }
 
 fn free(ptr: ?*anyopaque) callconv(.c) void {
-    alloc_mutex.lock();
+    while (!alloc_mutex.tryLock()) {
+        std.atomic.spinLoopHint();
+    }
     defer alloc_mutex.unlock();
 
     const old_ptr = ptr orelse return;
