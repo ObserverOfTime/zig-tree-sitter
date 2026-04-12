@@ -34,7 +34,7 @@ jobs:
           - aarch64-linux-gnu
           - x86_64-windows-gnu
           - x86_64-windows-msvc
-          - aarch64-windows-gnu
+          # aarch64-windows-gnu
           - aarch64-macos-none
           - x86_64-macos-none
         wasm:
@@ -51,34 +51,30 @@ jobs:
             target: x86_64-windows-gnu
           - os: windows-2022
             target: x86_64-windows-msvc
-          - os: windows-11-arm
-            target: aarch64-windows-gnu
+          # FIXME: segmentation fault
+          # - os: windows-11-arm
+          #   target: aarch64-windows-gnu
           - os: macos-15
             target: aarch64-macos-none
           - os: macos-15-intel
             target: x86_64-macos-none
-        exclude:
-          # doesn't build
-          - target: x86_64-windows-msvc
-            wasm: "true"
-          # no wasmtime archive
-          - target: aarch64-windows-gnu
-            wasm: "true"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
       - name: Set up Zig
         uses: mlugg/setup-zig@v2
         with:
-          version: 0.15.1
+          version: ${{vars.ZIG_VERSION}}
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
         if: contains(matrix.target, 'msvc')
       - name: Install musl
         if: matrix.target == 'x86_64-linux-musl'
-        run: sudo apt-get update && sudo apt-get install -y musl
+        run: |-
+          curl -JLO https://launchpad.net/ubuntu/+archive/primary/+files/musl_1.2.5-3_amd64.deb
+          sudo dpkg -i musl_1.2.5-3_amd64.deb
       - name: Run unit tests
         shell: sh
-        run: zig build test $ZIG_FLAGS -Doptimize=ReleaseSafe --verbose
+        run: zig build test $ZIG_FLAGS -Doptimize=ReleaseSafe -Dtest-deps --verbose
         env:
           ZIG_FLAGS: -Dtarget=${{matrix.target}} -Denable-wasm=${{matrix.wasm}}

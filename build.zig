@@ -8,6 +8,7 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
 
     const options = b.addOptions();
+    const test_deps = b.option(bool, "test-deps", "Fetch test dependencies") orelse false;
     const enable_wasm = b.option(bool, "enable-wasm", "Enable Wasm support") orelse false;
     options.addOption(bool, "enable_wasm", enable_wasm);
 
@@ -67,16 +68,6 @@ pub fn build(b: *std.Build) !void {
 
     if (wasmtime) |dep| {
         if (target.result.os.tag == .windows) {
-            if (target.result.abi != .msvc) {
-                const copy_wasmtime = b.addInstallLibFile(dep.path("lib/libwasmtime.a"), "wasmtime.lib");
-                lib.step.dependOn(&copy_wasmtime.step);
-                module.addLibraryPath(b.path("zig-out/lib"));
-                test_mod.addLibraryPath(b.path("zig-out/lib"));
-            } else {
-                const fail = b.addFail("FIXME: cannot build with enable-wasm for MSVC");
-                test_step.dependOn(&fail.step);
-            }
-
             test_mod.linkSystemLibrary("advapi32", .{});
             test_mod.linkSystemLibrary("bcrypt", .{});
             test_mod.linkSystemLibrary("ntdll", .{});
@@ -84,6 +75,17 @@ pub fn build(b: *std.Build) !void {
             test_mod.linkSystemLibrary("shell32", .{});
             test_mod.linkSystemLibrary("userenv", .{});
             test_mod.linkSystemLibrary("ws2_32", .{});
+        }
+
+        if (target.result.abi != .msvc) {
+            test_mod.linkSystemLibrary("unwind", .{ .use_pkg_config = .no });
+        }
+
+        if (target.result.os.tag == .windows and target.result.abi != .msvc) {
+            const copy_wasmtime = b.addInstallLibFile(dep.path("lib/libwasmtime.a"), "wasmtime.lib");
+            lib.step.dependOn(&copy_wasmtime.step);
+            module.addLibraryPath(b.path("zig-out/lib"));
+            test_mod.addLibraryPath(b.path("zig-out/lib"));
         } else {
             module.addLibraryPath(dep.path("lib"));
             test_mod.addLibraryPath(dep.path("lib"));
@@ -94,35 +96,24 @@ pub fn build(b: *std.Build) !void {
             .search_strategy = .no_fallback,
             .preferred_link_mode = .static,
         });
-        test_mod.linkSystemLibrary("unwind", .{
-            .use_pkg_config = .no,
-        });
     }
 
-    // HACK: fetch tree-sitter-c only for tests (ziglang/zig#19914)
-    if (b.pkg_hash.len > 0) return;
-    var args = try std.process.argsWithAllocator(b.allocator);
-    defer args.deinit();
-    while (args.next()) |a| {
-        if (std.mem.eql(u8, a, "test")) {
-            const dep = b.lazyDependency("tree_sitter_c", .{
-                .target = target,
-                .optimize = optimize,
-            }) orelse continue;
-            test_mod.linkLibrary(dep.artifact("tree-sitter-c"));
+    if (test_deps) {
+        const dep = b.lazyDependency("tree_sitter_c", .{
+            .target = target,
+            .optimize = optimize,
+        }) orelse return;
+        test_mod.linkLibrary(dep.artifact("tree-sitter-c"));
 
-            if (enable_wasm) {
-                const run_curl = b.addSystemCommand(&.{ "curl", "-LSsf", wasm_url, "-o" });
-                const wasm_file = run_curl.addOutputFileArg("tree-sitter-c.wasm");
-                run_curl.expectExitCode(0);
-                run_curl.expectStdErrEqual("");
-                test_step.dependOn(&run_curl.step);
-                test_mod.addAnonymousImport("tree-sitter-c.wasm", .{
-                    .root_source_file = wasm_file,
-                });
-            }
-
-            break;
+        if (enable_wasm) {
+            const run_curl = b.addSystemCommand(&.{ "curl", "-LSsf", wasm_url, "-o" });
+            const wasm_file = run_curl.addOutputFileArg("tree-sitter-c.wasm");
+            run_curl.expectExitCode(0);
+            run_curl.expectStdErrEqual("");
+            test_step.dependOn(&run_curl.step);
+            test_mod.addAnonymousImport("tree-sitter-c.wasm", .{
+                .root_source_file = wasm_file,
+            });
         }
     }
 }
