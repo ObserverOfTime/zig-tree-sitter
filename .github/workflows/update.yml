@@ -1,9 +1,9 @@
 name: Update
 
 on:
-  schedule:
-    # every Saturday at 13:00 UTC
-    - cron: "0 13 * * 6"
+  # schedule:
+  #   # every Saturday at 13:00 UTC
+  #   - cron: "0 13 * * 6"
   workflow_dispatch:
 
 permissions:
@@ -23,10 +23,10 @@ jobs:
           version: ${{vars.ZIG_VERSION}}
       - name: Update dependencies
         run: |-
-          for repo in tree-sitter/tree-sitter tree-sitter/tree-sitter-c; do
-            tag="$(gh release view -R "$repo" --json tagName -q .tagName)"
-            zig fetch --save "https://github.com/$repo/archive/refs/tags/$tag.tar.gz"
-          done
+          tag="$(gh release view -R "tree-sitter/tree-sitter" --json tagName -q .tagName)"
+          zig fetch --save "https://github.com/tree-sitter/tree-sitter/archive/refs/tags/$tag.tar.gz"
+          tag="$(gh release view -R "tree-sitter/tree-sitter-c" --json tagName -q .tagName)"
+          zig fetch --save "https://github.com/tree-sitter/tree-sitter-c/releases/download/$tag/tree-sitter-c.tar.gz"
         env:
           GH_TOKEN: ${{github.token}}
       - name: Create pull request
@@ -42,4 +42,4 @@ jobs:
           delete-branch: true
           author: >-
             dependabot[bot]
-            49699333+dependabot[bot]@users.noreply.github.com
+            <49699333+dependabot[bot]@users.noreply.github.com>
