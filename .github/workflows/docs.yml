@@ -28,7 +28,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
       - name: Set up Zig
-        uses: mlugg/setup-zig@v2
+        uses: vercel-labs/setup-zig@v1
         with:
           version: ${{vars.ZIG_VERSION}}
       - name: Generate documentation
