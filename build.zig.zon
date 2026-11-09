@@ -5,11 +5,11 @@
     .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .tree_sitter = .{
-            .url = "git+https://github.com/tree-sitter/tree-sitter#24a64db7ccb7dff830789cf44ecfeaacf7fee822",
-            .hash = "tree_sitter-0.27.0-Tw2sR0TDCwBUIKjCd2avkJKfxXvSNZmdynJqiXMUYgAv",
+            .url = "https://github.com/tree-sitter/tree-sitter/archive/refs/tags/v0.27.2.tar.gz",
+            .hash = "tree_sitter-0.27.2-Tw2sR8H1DQA0X6RmzcaABPYo71PUgl1SnGAn9YOYBYyU",
         },
         .tree_sitter_c = .{
-            .url = "git+https://github.com/tree-sitter/tree-sitter-c#b780e47fc780ddc8da13afa35a3f4ed5c157823d",
+            .url = "https://github.com/tree-sitter/tree-sitter-c/releases/download/v0.24.2/tree-sitter-c.tar.gz",
             .hash = "tree_sitter_c-0.24.2-y5boS-ptQADHoCoVfjGT_nFtFQ5LbomIkW0fxG3_cmdB",
             .lazy = true,
         },
