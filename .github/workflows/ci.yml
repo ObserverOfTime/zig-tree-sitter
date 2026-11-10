@@ -75,6 +75,6 @@ jobs:
           sudo dpkg -i musl_1.2.5-3_amd64.deb
       - name: Run unit tests
         shell: sh
-        run: zig build test $ZIG_FLAGS -Doptimize=ReleaseSafe -Dtest-deps --verbose
+        run: zig build test $ZIG_FLAGS -Doptimize=Debug -Dtest-deps --verbose
         env:
           ZIG_FLAGS: -Dtarget=${{matrix.target}} -Denable-wasm=${{matrix.wasm}}
