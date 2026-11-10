@@ -42,6 +42,11 @@ pub const Query = opaque {
         };
     }
 
+    /// Create a copy of the query.
+    pub inline fn dupe(self: *const Query) *Query {
+        return ts_query_copy(self);
+    }
+
     /// Delete the query, freeing all of the memory that it used.
     pub inline fn destroy(self: *Query) void {
         ts_query_delete(self);
@@ -201,6 +206,7 @@ extern fn ts_query_new(
     error_offset: *u32,
     error_type: *QueryError,
 ) ?*Query;
+extern fn ts_query_copy(self: *const Query) *Query;
 extern fn ts_query_delete(self: *Query) void;
 extern fn ts_query_pattern_count(self: *const Query) u32;
 extern fn ts_query_capture_count(self: *const Query) u32;

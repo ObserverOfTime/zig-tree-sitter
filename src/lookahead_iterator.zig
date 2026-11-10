@@ -34,8 +34,10 @@ pub const LookaheadIterator = opaque {
     }
 
     /// Get the current symbol name of the lookahead iterator.
-    pub fn currentSymbolName(self: *const LookaheadIterator) []const u8 {
-        return std.mem.span(ts_lookahead_iterator_current_symbol_name(self));
+    ///
+    /// This returns `null` unless the most recent call to `next()` returned `true`.
+    pub fn currentSymbolName(self: *const LookaheadIterator) ?[]const u8 {
+        return if (ts_lookahead_iterator_current_symbol_name(self)) |name| std.mem.span(name) else null;
     }
 
     /// Advance the lookahead iterator to the next symbol.
@@ -57,7 +59,7 @@ pub const LookaheadIterator = opaque {
 };
 
 extern fn ts_lookahead_iterator_current_symbol(self: *const LookaheadIterator) u16;
-extern fn ts_lookahead_iterator_current_symbol_name(self: *const LookaheadIterator) [*:0]const u8;
+extern fn ts_lookahead_iterator_current_symbol_name(self: *const LookaheadIterator) ?[*:0]const u8;
 extern fn ts_lookahead_iterator_delete(self: *LookaheadIterator) void;
 extern fn ts_lookahead_iterator_language(self: ?*const LookaheadIterator) *const Language;
 extern fn ts_lookahead_iterator_new(self: *const Language, state: u16) ?*LookaheadIterator;

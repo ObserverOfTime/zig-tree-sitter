@@ -64,6 +64,15 @@ pub const Language = opaque {
         };
     }
 
+    /// Check whether this language can be assigned to a parser.
+    ///
+    /// In WebAssembly, a language obtained from a tree can be used for parsing
+    /// only within the same WebAssembly instance that created the tree,
+    /// because lexer function pointers are local to a WebAssembly instance.
+    pub inline fn isParseable(self: *const Language) bool {
+        return ts_language_is_parseable(self);
+    }
+
     /// Check if the language came from a Wasm module.
     ///
     /// If so, then in order to use this language with a `Parser`,
@@ -165,6 +174,7 @@ extern fn ts_language_delete(self: *const Language) void;
 extern fn ts_language_field_count(self: *const Language) u32;
 extern fn ts_language_field_id_for_name(self: *const Language, name: [*]const u8, name_length: u32) u16;
 extern fn ts_language_field_name_for_id(self: *const Language, id: u16) ?[*:0]const u8;
+extern fn ts_language_is_parseable(self: *const Language) bool;
 extern fn ts_language_is_wasm(language: *const Language) bool;
 extern fn ts_language_metadata(self: *const Language) ?*const LanguageMetadata;
 extern fn ts_language_name(self: *const Language) ?[*:0]const u8;

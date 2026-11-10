@@ -21,6 +21,7 @@ test "Language" {
     try testing.expect(!language.isSupertype(1));
     try testing.expect(language.nextState(1, 161) > 1);
     try testing.expect(!language.isWasm());
+    try testing.expect(language.isParseable());
 
     const copy = language.dupe();
     try testing.expectEqual(language, copy);
@@ -37,15 +38,15 @@ test "LookaheadIterator" {
 
     try testing.expectEqual(language, lookahead.language());
     try testing.expectEqual(0xFFFF, lookahead.currentSymbol());
-    try testing.expectEqualStrings("ERROR", lookahead.currentSymbolName());
+    try testing.expectEqual(null, lookahead.currentSymbolName());
 
     try testing.expect(lookahead.next());
     try testing.expectEqual(160, lookahead.currentSymbol());
-    try testing.expectEqualStrings("comment", lookahead.currentSymbolName());
+    try testing.expectEqualStrings("comment", lookahead.currentSymbolName().?);
 
     try testing.expect(lookahead.next());
     try testing.expectEqual(0, lookahead.currentSymbol());
-    try testing.expectEqualStrings("end", lookahead.currentSymbolName());
+    try testing.expectEqualStrings("end", lookahead.currentSymbolName().?);
 
     try testing.expect(!lookahead.next());
     try testing.expect(lookahead.resetState(state));
@@ -386,6 +387,7 @@ test "Wasm" {
     defer language.destroy();
 
     try testing.expect(language.isWasm());
+    try testing.expect(language.isParseable());
     try testing.expectEqual(1, store.languageCount());
 
     const parser = ts.Parser.create();
