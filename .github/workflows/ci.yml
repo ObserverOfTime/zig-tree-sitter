@@ -34,29 +34,28 @@ jobs:
           - aarch64-linux-gnu
           - x86_64-windows-gnu
           - x86_64-windows-msvc
-          # aarch64-windows-gnu
+          - aarch64-windows-gnu
           - aarch64-macos-none
           - x86_64-macos-none
         wasm:
           - "true"
           - "false"
         include:
-          - os: ubuntu-24.04
+          - os: ubuntu-26.04
             target: x86_64-linux-gnu
-          - os: ubuntu-24.04
+          - os: ubuntu-26.04
             target: x86_64-linux-musl
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-26.04-arm
             target: aarch64-linux-gnu
-          - os: windows-2022
+          - os: windows-2025
             target: x86_64-windows-gnu
-          - os: windows-2022
+          - os: windows-2025
             target: x86_64-windows-msvc
-          # FIXME: segmentation fault
-          # - os: windows-11-arm
-          #   target: aarch64-windows-gnu
-          - os: macos-15
+          - os: windows-11-arm
+            target: aarch64-windows-gnu
+          - os: macos-26
             target: aarch64-macos-none
-          - os: macos-15-intel
+          - os: macos-26-intel
             target: x86_64-macos-none
     steps:
       - name: Checkout repository
@@ -71,8 +70,8 @@ jobs:
       - name: Install musl
         if: matrix.target == 'x86_64-linux-musl'
         run: |-
-          curl -JLO https://launchpad.net/ubuntu/+archive/primary/+files/musl_1.2.5-3_amd64.deb
-          sudo dpkg -i musl_1.2.5-3_amd64.deb
+          curl -JLO https://launchpadlibrarian.net/847285671/musl_1.2.5-3build1_amd64.deb
+          sudo dpkg -i musl_1.2.5-3build1_amd64.deb
       - name: Run unit tests
         shell: sh
         run: zig build test $ZIG_FLAGS -Doptimize=Debug -Dtest-deps --verbose
