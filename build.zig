@@ -6,6 +6,10 @@ const wasm_url = "https://github.com/tree-sitter/tree-sitter-c/releases/download
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    const os = target.result.os.tag;
+    const abi = target.result.abi;
+    const arch = target.result.cpu.arch;
+    const strip = if (os == .windows and arch.isAARCH64()) false else null;
 
     const options = b.addOptions();
     const test_deps = b.option(bool, "test-deps", "Fetch test dependencies") orelse false;
@@ -29,6 +33,7 @@ pub fn build(b: *std.Build) !void {
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
+        .strip = strip,
     });
     module.linkLibrary(core_lib);
     module.addOptions("build", options);
@@ -52,6 +57,7 @@ pub fn build(b: *std.Build) !void {
         .root_source_file = b.path("src/test.zig"),
         .target = target,
         .optimize = optimize,
+        .strip = strip,
     });
     test_mod.linkLibrary(lib);
     test_mod.addOptions("build", options);
@@ -68,9 +74,6 @@ pub fn build(b: *std.Build) !void {
     test_step.dependOn(&run_tests.step);
 
     if (wasmtime) |dep| {
-        const os = target.result.os.tag;
-        const abi = target.result.abi;
-
         if (abi == .msvc) {
             const install_dll = b.addInstallLibFile(dep.path("lib/wasmtime.dll"), "wasmtime.dll");
             run_tests.step.dependOn(&install_dll.step);
