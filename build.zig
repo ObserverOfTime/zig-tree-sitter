@@ -56,33 +56,44 @@ pub fn build(b: *std.Build) !void {
     test_mod.linkLibrary(lib);
     test_mod.addOptions("build", options);
 
-    const run_tests = b.addRunArtifact(b.addTest(.{
+    const tests = b.addTest(.{
         .root_module = test_mod,
         .test_runner = .{
             .mode = .simple,
             .path = b.path("test_runner.zig"),
         },
-    }));
+    });
+    const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_tests.step);
 
     if (wasmtime) |dep| {
-        if (target.result.os.tag == .windows) {
-            test_mod.linkSystemLibrary("advapi32", .{});
-            test_mod.linkSystemLibrary("bcrypt", .{});
-            test_mod.linkSystemLibrary("ntdll", .{});
-            test_mod.linkSystemLibrary("ole32", .{});
-            test_mod.linkSystemLibrary("shell32", .{});
-            test_mod.linkSystemLibrary("userenv", .{});
-            test_mod.linkSystemLibrary("ws2_32", .{});
-        }
+        const os = target.result.os.tag;
+        const abi = target.result.abi;
 
-        if (target.result.abi != .msvc) {
+        if (abi == .msvc) {
+            const install_dll = b.addInstallLibFile(dep.path("lib/wasmtime.dll"), "wasmtime.dll");
+            run_tests.step.dependOn(&install_dll.step);
+            run_tests.addPathDir(b.getInstallPath(.lib, ""));
+        } else {
             test_mod.linkSystemLibrary("unwind", .{ .use_pkg_config = .no });
+            if (os == .windows) {
+                test_mod.linkSystemLibrary("advapi32", .{});
+                test_mod.linkSystemLibrary("bcrypt", .{});
+                test_mod.linkSystemLibrary("ntdll", .{});
+                test_mod.linkSystemLibrary("ole32", .{});
+                test_mod.linkSystemLibrary("shell32", .{});
+                test_mod.linkSystemLibrary("userenv", .{});
+                test_mod.linkSystemLibrary("ws2_32", .{});
+            } else if (!os.isDarwin()) {
+                tests.use_llvm = true;
+                tests.use_lld = true;
+            }
         }
 
-        if (target.result.os.tag == .windows and target.result.abi != .msvc) {
-            const copy_wasmtime = b.addInstallLibFile(dep.path("lib/libwasmtime.a"), "wasmtime.lib");
+        if (os == .windows) {
+            const src = if (abi == .msvc) "lib/wasmtime.dll.lib" else "lib/libwasmtime.a";
+            const copy_wasmtime = b.addInstallLibFile(dep.path(src), "wasmtime.lib");
             lib.step.dependOn(&copy_wasmtime.step);
             module.addLibraryPath(b.path("zig-out/lib"));
             test_mod.addLibraryPath(b.path("zig-out/lib"));

@@ -71,8 +71,8 @@ jobs:
       - name: Install musl
         if: matrix.target == 'x86_64-linux-musl'
         run: |-
-          curl -JLO https://launchpad.net/ubuntu/+archive/primary/+files/musl_1.2.5-3_amd64.deb
-          sudo dpkg -i musl_1.2.5-3_amd64.deb
+          curl -JLO https://launchpadlibrarian.net/847285671/musl_1.2.5-3build1_amd64.deb
+          sudo dpkg -i musl_1.2.5-3build1_amd64.deb
       - name: Run unit tests
         shell: sh
         run: zig build test $ZIG_FLAGS -Doptimize=Debug -Dtest-deps --verbose
