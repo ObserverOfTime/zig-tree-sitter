@@ -6,6 +6,7 @@ const wasm_url = "https://github.com/tree-sitter/tree-sitter-c/releases/download
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    const os = target.result.os.tag;
 
     const options = b.addOptions();
     const test_deps = b.option(bool, "test-deps", "Fetch test dependencies") orelse false;
@@ -68,45 +69,22 @@ pub fn build(b: *std.Build) !void {
     test_step.dependOn(&run_tests.step);
 
     if (wasmtime) |dep| {
-        const os = target.result.os.tag;
-        const abi = target.result.abi;
-
-        if (abi == .msvc) {
-            const install_dll = b.addInstallLibFile(dep.path("lib/wasmtime.dll"), "wasmtime.dll");
-            run_tests.step.dependOn(&install_dll.step);
-            run_tests.addPathDir(b.getInstallPath(.lib, ""));
+        if (target.result.abi == .msvc) {
+            test_mod.addObjectFile(dep.path("lib/wasmtime.dll.lib"));
+            // HACK: set the working directory to the lib path so the exe can load it
+            run_tests.setCwd(dep.path("lib"));
         } else {
-            test_mod.linkSystemLibrary("unwind", .{ .use_pkg_config = .no });
             if (os == .windows) {
-                test_mod.linkSystemLibrary("advapi32", .{});
-                test_mod.linkSystemLibrary("bcrypt", .{});
-                test_mod.linkSystemLibrary("ntdll", .{});
-                test_mod.linkSystemLibrary("ole32", .{});
-                test_mod.linkSystemLibrary("shell32", .{});
-                test_mod.linkSystemLibrary("userenv", .{});
-                test_mod.linkSystemLibrary("ws2_32", .{});
+                inline for (.{ "advapi32", "bcrypt", "ntdll", "ole32", "shell32", "userenv", "ws2_32" }) |name| {
+                    test_mod.linkSystemLibrary(name, .{});
+                }
             } else if (!os.isDarwin()) {
                 tests.use_llvm = true;
                 tests.use_lld = true;
             }
+            test_mod.linkSystemLibrary("unwind", .{ .use_pkg_config = .no });
+            test_mod.addObjectFile(dep.path("lib/libwasmtime.a"));
         }
-
-        if (os == .windows) {
-            const src = if (abi == .msvc) "lib/wasmtime.dll.lib" else "lib/libwasmtime.a";
-            const copy_wasmtime = b.addInstallLibFile(dep.path(src), "wasmtime.lib");
-            lib.step.dependOn(&copy_wasmtime.step);
-            module.addLibraryPath(b.path("zig-out/lib"));
-            test_mod.addLibraryPath(b.path("zig-out/lib"));
-        } else {
-            module.addLibraryPath(dep.path("lib"));
-            test_mod.addLibraryPath(dep.path("lib"));
-        }
-
-        module.linkSystemLibrary("wasmtime", .{
-            .use_pkg_config = .no,
-            .search_strategy = .no_fallback,
-            .preferred_link_mode = .static,
-        });
     }
 
     if (test_deps) {
@@ -117,7 +95,8 @@ pub fn build(b: *std.Build) !void {
         test_mod.linkLibrary(dep.artifact("tree-sitter-c"));
 
         if (enable_wasm) {
-            const run_curl = b.addSystemCommand(&.{ "curl", "-LSsf", wasm_url, "-o" });
+            const curl = if (os == .windows) "curl.exe" else "curl";
+            const run_curl = b.addSystemCommand(&.{ curl, "-LSsf", wasm_url, "-o" });
             const wasm_file = run_curl.addOutputFileArg("tree-sitter-c.wasm");
             run_curl.expectExitCode(0);
             run_curl.expectStdErrEqual("");
